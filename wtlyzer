@@ -1,0 +1,62 @@
+#!/bin/sh
+
+GEOIPDB=/var/db/GeoIP/GeoLite2-City.mmdb
+ACCESSLOG=access.log
+BACKGROUNDMAP=world_orig.png
+
+cp $BACKGROUNDMAP world.png
+
+all_ips() {
+	awk '{ print $2; }' $ACCESSLOG \
+		| sort \
+		| uniq -c \
+		| sort -n \
+		| awk '{ print $2 }'
+}
+
+find_location() {
+	(mmdblookup --file $GEOIPDB --ip $1 location \
+		| sed 's/<.*>//g' \
+		| grep -A1 $2 \
+		| grep -v $2 \
+		| awk '{ printf("%d", $1) }' \
+	) 2>/dev/null
+}
+
+mkrect() {
+	X=$1
+	Y=$2
+	printf "%d,%d " $(expr $X - 2) $(expr $Y - 2)
+	printf "%d,%d " $(expr $X + 2) $(expr $Y + 2)
+}
+
+TOTAL=$(all_ips | wc -l | awk '{ print $1 }')
+CNT=$TOTAL
+YELLOW_LIMIT=$(expr $TOTAL / 2)
+ORANGE_LIMIT=$(expr $TOTAL / 4)
+for a in $(all_ips) ; do
+	LAT=$(find_location $a latitude)
+	LON=$(find_location $a longitude)
+	if [ "$LAT" != "" ] ; then
+		X=$(expr $LON + 180)
+		Y=$(expr 90 - $LAT)
+		X=$(expr $X \* 2)
+		Y=$(expr $Y \* 2)
+		CNT=$(expr $CNT - 1)
+		RECT=$(mkrect $X $Y)
+		if [ $CNT -gt $YELLOW_LIMIT ] ; then
+			FILL="yellow"
+		elif [ $CNT -gt $ORANGE_LIMIT ] ; then
+			FILL="orange"
+		else
+			FILL="red"
+		fi
+		convert world.png \
+			-fill $FILL \
+			-draw "rectangle $RECT" \
+			world2.png
+		cp world2.png world.png
+		echo $LAT $LON
+	fi
+done
+rm world2.png

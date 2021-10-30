@@ -1,1 +1,16 @@
 wtlyzer - Web Traffic Analyzer
+
+Depends:
+ - maxmind GeoIP database on a city level
+ - mmdblookup
+ - ImageMagick
+ - Apache access.log style of a log file with IP addresses
+
+Usage
+=====
+
+First download an equirectangular projection world map (equidistant
+cylindrical) and convert it to 720x360 or similar resolution that can
+be scaled back to 360x180 and then modify the multiplier in the
+script accordingly if it is not 720x360. Also, change the configurable
+parameters in the script.
