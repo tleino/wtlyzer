@@ -5,8 +5,6 @@ GEOIPDB_ASN=/var/db/GeoIP/GeoLite2-ASN.mmdb
 ACCESSLOG=access.log
 BACKGROUNDMAP=world_orig.png
 
-cp $BACKGROUNDMAP world.png
-
 all_ips() {
 	awk '{ print $2; }' $ACCESSLOG \
 		| sort \
@@ -71,12 +69,11 @@ for a in $(all_ips) ; do
 		else
 			FILL="red"
 		fi
-		convert world.png \
-			-fill $FILL \
-			-draw "rectangle $RECT" \
-			world2.png
-		cp world2.png world.png
-		echo $LAT $LON
+		DRAW="$DRAW fill $FILL rectangle $RECT"
+		echo $X $Y $ASN $CITY
 	fi
 done
-rm world2.png
+convert ${BACKGROUNDMAP} \
+	-pointsize 8 \
+	-draw "${DRAW}" \
+	world.png
