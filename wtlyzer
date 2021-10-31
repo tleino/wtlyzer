@@ -1,6 +1,7 @@
 #!/bin/sh
 
 GEOIPDB=/var/db/GeoIP/GeoLite2-City.mmdb
+GEOIPDB_ASN=/var/db/GeoIP/GeoLite2-ASN.mmdb
 ACCESSLOG=access.log
 BACKGROUNDMAP=world_orig.png
 
@@ -23,6 +24,23 @@ find_location() {
 	) 2>/dev/null
 }
 
+find_city() {
+	(mmdblookup --file $GEOIPDB --ip $1 city names en \
+		| sed 's/<.*>//g' \
+		| tr -cd '[:alpha:]' \
+		| cut -b-8 \
+	) 2>/dev/null
+}
+
+find_asn() {
+	(mmdblookup --file $GEOIPDB_ASN --ip $1 \
+		autonomous_system_organization \
+		| sed 's/<.*>//g' \
+		| tr -cd '[:alpha:]' \
+		| cut -b-8 \
+	) 2>/dev/null
+}
+
 mkrect() {
 	X=$1
 	Y=$2
@@ -37,6 +55,8 @@ ORANGE_LIMIT=$(expr $TOTAL / 4)
 for a in $(all_ips) ; do
 	LAT=$(find_location $a latitude)
 	LON=$(find_location $a longitude)
+#	ASN=$(find_asn $a)
+#	CITY=$(find_city $a)
 	if [ "$LAT" != "" ] ; then
 		X=$(expr $LON + 180)
 		Y=$(expr 90 - $LAT)
